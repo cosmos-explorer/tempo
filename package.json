@@ -1,0 +1,49 @@
+{
+  "name": "@featbit/js-client-sdk",
+  "version": "3.0.0",
+  "description": "https://github.com/featbit/featbit-node-server-sdk",
+  "main": "./dist/cjs/src/index.js",
+  "module": "./dist/esm/src/index.js",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "prebuild": "node -p \"'export const version = \\\"' + require('./package.json').version + '\\\"; export const name = \\\"' + require('./package.json').name + '\\\";'\" > src/version.ts",
+    "build": "rimraf dist && tsc -p tsconfig.json && tsc -p tsconfig.json && webpack --mode production",
+    "test": "npx jest --ci",
+    "test-coverage": "npx jest --ci --coverage",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/featbit/featbit-node-server-sdk"
+  },
+  "keywords": [
+    "featbit",
+    "node",
+    "server sdk",
+    "feature flags",
+    "feature management"
+  ],
+  "author": "featbit.co",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/featbit/featbit-node-server-sdk/issues"
+  },
+  "homepage": "https://github.com/featbit/featbit-node-server-sdk#readme",
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.10.1",
+    "@types/ws": "^8.5.10",
+    "jest": "^29.7.0",
+    "rimraf": "^5.0.5",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2",
+    "string-replace-loader": "^3.1.0",
+    "ts-loader": "^9.5.1",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+  }
+}
