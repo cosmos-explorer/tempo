@@ -1,5 +1,6 @@
 import { IEvalDetail } from "./evaluation/IEvalDetail";
 import { IConvertResult } from "./utils/ValueConverters";
+import { IUser } from "./options";
 
 /**
  * The FeatBit SDK client object.
@@ -17,7 +18,7 @@ export interface IFbClientCore {
    *   The current user. The actual type of this parameter is
    *   {@link IUser}.
    */
-  identify(user: any): void;
+  identify(user: IUser): void;
 
   /**
    * Indicates whether the client is ready to be used.
@@ -33,7 +34,6 @@ export interface IFbClientCore {
    * @returns A promise.
    */
   waitForInitialization(): Promise<IFbClientCore>;
-
 
   /**
    * Calculates the boolean value of a feature flag for a given user.
@@ -52,7 +52,7 @@ export interface IFbClientCore {
   boolVariation(
     key: string,
     defaultValue: boolean
-  ): Promise<boolean>;
+  ): boolean;
 
   /**
    * Calculates the boolean value of a feature flag for a given user, and returns an object that
@@ -72,7 +72,7 @@ export interface IFbClientCore {
   boolVariationDetail(
     key: string,
     defaultValue: boolean
-  ): Promise<IEvalDetail<boolean>>;
+  ): IEvalDetail<boolean>;
 
   /**
    * Calculates the number value of a feature flag for a given user.
@@ -91,7 +91,7 @@ export interface IFbClientCore {
   numberVariation(
     key: string,
     defaultValue: number
-  ): Promise<number>;
+  ): number;
 
   /**
    * Calculates the number value of a feature flag for a given user, and returns an object that
@@ -111,7 +111,7 @@ export interface IFbClientCore {
   numberVariationDetail(
     key: string,
     defaultValue: number
-  ): Promise<IEvalDetail<number>>;
+  ): IEvalDetail<number>;
 
   /**
    * Calculates the string value of a feature flag for a given user.
@@ -130,7 +130,7 @@ export interface IFbClientCore {
   stringVariation(
     key: string,
     defaultValue: string
-  ): Promise<string>;
+  ): string;
 
   /**
    * Calculates the string value of a feature flag for a given user, and returns an object that
@@ -150,7 +150,7 @@ export interface IFbClientCore {
   stringVariationDetail(
     key: string,
     defaultValue: string
-  ): Promise<IEvalDetail<string>>;
+  ): IEvalDetail<string>;
 
   /**
    * Calculates the JSON value of a feature flag for a given user.
@@ -169,7 +169,7 @@ export interface IFbClientCore {
   jsonVariation(
     key: string,
     defaultValue: any
-  ): Promise<any>;
+  ): any;
 
   /**
    * Calculates the JSON value of a feature flag for a given user, and returns an object that
@@ -189,7 +189,46 @@ export interface IFbClientCore {
   jsonVariationDetail(
     key: string,
     defaultValue: any
-  ): Promise<IEvalDetail<any>>;
+  ): IEvalDetail<any>;
+
+  /**
+   * Calculates the string value of a feature flag for a given user.
+   *
+   * If the flag variation does not have a string value, {@link defaultValue} is returned.
+   * If an error makes it impossible to evaluate the flag (for instance, the feature flag key
+   * does not match any existing flag), {@link defaultValue} is returned.
+   *
+   * @param key
+   *  The unique key of the feature flag.
+   * @param defaultValue
+   *  The default value to return if the flag cannot be evaluated.
+   *
+   *  @returns the variation for the given user, or {@link defaultValue} if the flag cannot be evaluated
+   */
+  variation(
+    key: string,
+    defaultValue: string
+  ): string;
+
+  /**
+   * Calculates the string value of a feature flag for a given user, and returns an object that
+   * describes the way the value was determined.
+   *
+   * If the flag variation does not have a string value, {@link defaultValue} is returned.
+   * If an error makes it impossible to evaluate the flag (for instance, the feature flag key
+   * does not match any existing flag), {@link defaultValue} is returned.
+   *
+   * @param key
+   *  The unique key of the feature flag.
+   * @param defaultValue
+   *  The default value to return if the flag cannot be evaluated.
+   *
+   *  @returns {@link IEvalDetail} object describing the way the value was determined.
+   */
+  variationDetail(
+    key: string,
+    defaultValue: string
+  ): IEvalDetail<string>;
 
   /**
    * This method is exposed only for testing purpose, please DO NOT USE IT
@@ -216,7 +255,8 @@ export interface IFbClientCore {
   ): IEvalDetail<TValue>;
 
   /**
-   * Returns the variation of all feature flags for a given user, which can be passed to front-end code.
+   * Returns the variation with  of all feature flags for a given user, and returns an object that
+   * describes the way the value was determined for each flag.
    *
    *  @returns A list of {@link IEvalDetail} objects describing the way the values were determined.
    */

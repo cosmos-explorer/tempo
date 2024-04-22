@@ -13,12 +13,12 @@
 <body style="background-color: rgb(217 239 233);">
 <h1 style="text-align: center">FeatBit JavaScript SDK Demo</h1>
 <script type="text/javascript">
-    const secret = 'x5-p4nMlW0aLyzE5TpTtmwwvvdZpVB4Ey-aNea3wffFw';
+    const sdkKey = 'x5-p4nMlW0aLyzE5TpTtmwwvvdZpVB4Ey-aNea3wffFw';
     const flagKey = 'robot';
 
     window.onload = async (event) => {
         const logger = new BasicLogger({
-            level: 'warn',
+            level: 'debug',
             destination: console.log
         });
 
@@ -41,41 +41,60 @@
             }
         ];
 
-        const bootstrapProvider = new JsonBootstrapProvider(JSON.stringify(initFlags));
+        // const client = new FbClientBuilder()
+        //     .sdkKey(sdkKey)
+        //     .streamingUri('wss://app-eval.featbit.co')
+        //     .eventsUri('https://app-eval.featbit.co')
+        //     .dataSyncMode(DataSyncModeEnum.STREAMING)
+        //     .pollingInterval(10000)
+        //     .pollingUri('http://localhost:5100')
+        //     .user(user)
+        //     .logger(logger)
+        //     .bootstrap(initFlags)
+        //     .build();
 
         const client = new FbClientBuilder()
-            .sdkKey(secret)
+            .sdkKey(sdkKey)
             .streamingUri('ws://localhost:5100')
             .eventsUri('http://localhost:5100')
-            .dataSyncMode(DataSyncModeEnum.POLLING)
-            .pollingInterval(10000)
-            .pollingUri('http://localhost:5100')
+            .dataSyncMode(DataSyncModeEnum.STREAMING)
+            //.pollingInterval(1000)
+            //.pollingUri('http://localhost:5100')
             .user(user)
             .logger(logger)
-            .bootstrapProvider(bootstrapProvider)
+            .bootstrap(initFlags)
             .build();
 
-        await client.waitForInitialization();
-        let flagValue = await client.variation(flagKey, 'DeepBlue');
+        const changeHander = async (changes) => {
+            // changes has this structure [{id: 'the feature_flag_key', oldValue: theOldValue, newValue: theNewValue }]
+            // the type of theOldValue and theNewValue is defined on FeatBit
+            flagValue = client.variation(flagKey, false);
+            console.log(`flagKey=${flagKey}; flagValue=${flagValue}`);
+        };
 
+        client.on('update', changeHander);
+
+        client.on(`update:${flagKey}`, (key) => {
+            console.log(key);
+        });
+
+        await client.waitForInitialization();
+        let flagValue = client.variation(flagKey, 'DeepBlue');
+        let flagValue1 = client.variation(flagKey, 'DeepBlue');
+        let flagValue2 = client.variation(flagKey, 'DeepBlue');
+        let flagValue3 = client.variation(flagKey, 'DeepBlue');
+        client.track('aaa');
         setTimeout(() => {
             client.track('aaa');
         }, 5000);
 
         console.log(`flagKey=${flagKey}; flagValue=${flagValue}`);
-        setTimeout(()=>{
-            client.identify(new UserBuilder('thekey').name('thename').build())
-        }, 5000)
+        // setTimeout(()=>{
+        //     client.identify(new UserBuilder('thekey').name('thename').build())
+        // }, 5000)
 
 
-        const changeHander = async (changes) => {
-            // changes has this structure [{id: 'the feature_flag_key', oldValue: theOldValue, newValue: theNewValue }]
-            // the type of theOldValue and theNewValue is defined on FeatBit
-            flagValue = await client.variation(flagKey, false);
-            console.log(`flagKey=${flagKey}; flagValue=${flagValue}`);
-        };
 
-        client.on('update', changeHander);
     }
 </script>
 </body>

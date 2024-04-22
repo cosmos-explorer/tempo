@@ -38,7 +38,7 @@ export interface IClientCallbacks {
   onFailed: (err: Error) => void;
   onReady: () => void;
   // Called whenever flags change, if there are listeners.
-  onUpdate: (key: string) => void;
+  onUpdate: (keys: string[]) => void;
   // Method to check if event listeners have been registered.
   // If none are registered, then onUpdate will never be called.
   hasEventListeners: () => boolean;
@@ -99,7 +99,7 @@ export class FbClientCore implements IFbClientCore {
     this.init(platform, onUpdate, hasEventListeners);
   }
 
-  private async init(platform: IPlatform, onUpdate: (key: string) => void, hasEventListeners: () => boolean) {
+  private async init(platform: IPlatform, onUpdate: (keys: string[]) => void, hasEventListeners: () => boolean) {
     const clientContext = new ClientContext(this.config.sdkKey, this.config, platform);
     this.store = this.config.storeFactory(clientContext);
     this.store.identify(this.config.user);
@@ -231,47 +231,47 @@ export class FbClientCore implements IFbClientCore {
   boolVariation(
     key: string,
     defaultValue: boolean
-  ): Promise<boolean> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.bool).value!);
+  ): boolean {
+    return this.evaluateCore(key, defaultValue, ValueConverters.bool).value!;
   }
 
   boolVariationDetail(
     key: string,
     defaultValue: boolean
-  ): Promise<IEvalDetail<boolean>> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.bool));
+  ): IEvalDetail<boolean> {
+    return this.evaluateCore(key, defaultValue, ValueConverters.bool);
   }
 
-  jsonVariation(key: string, defaultValue: any): Promise<any> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.json).value!);
+  jsonVariation(key: string, defaultValue: any): any {
+    return this.evaluateCore(key, defaultValue, ValueConverters.json).value!;
   }
 
-  jsonVariationDetail(key: string, defaultValue: any): Promise<IEvalDetail<any>> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.json));
+  jsonVariationDetail(key: string, defaultValue: any): IEvalDetail<any> {
+    return this.evaluateCore(key, defaultValue, ValueConverters.json);
   }
 
-  numberVariation(key: string, defaultValue: number): Promise<number> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.number).value!);
+  numberVariation(key: string, defaultValue: number): number {
+    return this.evaluateCore(key, defaultValue, ValueConverters.number).value!;
   }
 
-  numberVariationDetail(key: string, defaultValue: number): Promise<IEvalDetail<number>> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.number));
+  numberVariationDetail(key: string, defaultValue: number): IEvalDetail<number> {
+    return this.evaluateCore(key, defaultValue, ValueConverters.number);
   }
 
-  stringVariation(key: string, defaultValue: string): Promise<string> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.string).value!);
+  stringVariation(key: string, defaultValue: string): string {
+    return this.evaluateCore(key, defaultValue, ValueConverters.string).value!;
   }
 
-  stringVariationDetail(key: string, defaultValue: string): Promise<IEvalDetail<string>> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.string));
+  stringVariationDetail(key: string, defaultValue: string): IEvalDetail<string> {
+    return this.evaluateCore(key, defaultValue, ValueConverters.string);
   }
 
-  variation(key: string, defaultValue: string): Promise<string> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.string).value!);
+  variation(key: string, defaultValue: string): string {
+    return this.evaluateCore(key, defaultValue, ValueConverters.string).value!;
   }
 
-  variationDetail(key: string, defaultValue: string): Promise<IEvalDetail<string>> {
-    return Promise.resolve(this.evaluateCore(key, defaultValue, ValueConverters.string));
+  variationDetail(key: string, defaultValue: string): IEvalDetail<string> {
+    return this.evaluateCore(key, defaultValue, ValueConverters.string);
   }
 
   getAllVariations(): Promise<IEvalDetail<string>[]> {
@@ -288,7 +288,7 @@ export class FbClientCore implements IFbClientCore {
     const [flags, _] = this.store!.all(DataKinds.Flags);
     const result = Object.keys(flags).map(flagKey => {
       const evalResult = this.evaluator!.evaluate(flagKey);
-      return {kind: evalResult.kind, reason: evalResult.reason, value: evalResult.value?.variation};
+      return {flagKey, kind: evalResult.kind, reason: evalResult.reason, value: evalResult.value?.variation};
     });
 
     return Promise.resolve(result);
@@ -329,7 +329,7 @@ export class FbClientCore implements IFbClientCore {
       );
       this.onError(error);
 
-      return {kind: ReasonKinds.Error, reason: error.message, value: defaultValue};
+      return {flagKey, kind: ReasonKinds.Error, reason: error.message, value: defaultValue};
     }
 
     const evalResult = this.evaluator!.evaluate(flagKey);
@@ -339,7 +339,7 @@ export class FbClientCore implements IFbClientCore {
       const error = new ClientError(evalResult.reason!);
       this.onError(error);
 
-      return {kind: evalResult.kind, reason: evalResult.reason, value: defaultValue};
+      return {flagKey, kind: evalResult.kind, reason: evalResult.reason, value: defaultValue};
     }
 
     if (!this.initialized()) {
@@ -354,8 +354,8 @@ export class FbClientCore implements IFbClientCore {
 
     const {isSucceeded, value} = typeConverter(evalResult.value?.variation!);
     return isSucceeded
-      ? {kind: evalResult.kind, reason: evalResult.reason, value}
-      : {kind: ReasonKinds.WrongType, reason: 'type mismatch', value: defaultValue};
+      ? {flagKey, kind: evalResult.kind, reason: evalResult.reason, value}
+      : {flagKey, kind: ReasonKinds.WrongType, reason: 'type mismatch', value: defaultValue};
   }
 
   private dataSourceErrorHandler(e: any) {

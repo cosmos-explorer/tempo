@@ -4,6 +4,8 @@ import { IOptions } from "./IOptions";
 import { IDataSynchronizer } from "../data-sync/IDataSynchronizer";
 import { DataSyncModeEnum } from "../data-sync/DataSyncMode";
 import { IUser } from "./IUser";
+import { IBootstrapProvider } from "../bootstrap";
+import { IFlagBase } from "../evaluation";
 
 export interface IValidatedOptions {
   startWaitTime: number;
@@ -21,6 +23,7 @@ export interface IValidatedOptions {
   dataSynchronizer?: IDataSynchronizer;
   logger?: ILogger;
   user?: IUser;
+  bootstrap?: IFlagBase[];
 
   // Allow indexing this by a string for the validation step.
   [index: string]: any;

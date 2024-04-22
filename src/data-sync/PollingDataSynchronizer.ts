@@ -53,29 +53,29 @@ export default class PollingDataSynchronizer implements IDataSynchronizer {
           return;
         }
         this.logger?.warn(httpErrorMessage(err, 'polling request', 'will retry'));
-      } else if (body) {
-        const message = JSON.parse(body);
-        if (message.messageType === 'data-sync') {
-          let processStreamResponse: ProcessStreamResponse | undefined;
-          switch (message.data.eventType) {
-            case StreamResponseEventType.patch:
-              processStreamResponse = this.listeners.get('patch');
-              break;
-            case StreamResponseEventType.full:
-              processStreamResponse = this.listeners.get('put');
-              break;
+      } else {
+        let featureFlags = [];
+        let userKeyId = this.user?.keyId!;
+        let processStreamResponse: ProcessStreamResponse | undefined = this.listeners.get('patch');
+
+        if (body) {
+          const message = JSON.parse(body);
+          if (message.messageType === 'data-sync') {
+            switch (message.data.eventType) {
+              case StreamResponseEventType.patch:
+                processStreamResponse = this.listeners.get('patch');
+                break;
+              case StreamResponseEventType.full:
+                processStreamResponse = this.listeners.get('put');
+                break;
+            }
+
+            ({featureFlags, userKeyId} = message.data);
           }
-
-          const {featureFlags, userKeyId} = message.data;
-          const data = processStreamResponse?.deserializeData?.(featureFlags);
-          processStreamResponse?.processJson?.(userKeyId, data);
-
-          this.timeoutHandle = setTimeout(() => {
-            this.poll();
-          }, sleepFor);
         }
 
-        return;
+        const data = processStreamResponse?.deserializeData?.(featureFlags);
+        processStreamResponse?.processJson?.(userKeyId, data);
       }
 
       // Falling through, there was some type of error and we need to trigger

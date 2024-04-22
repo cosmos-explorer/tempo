@@ -3,18 +3,13 @@ import { deserializeAll } from "../store/serialization";
 import { IDataSourceUpdates } from "../store/IDataSourceUpdates";
 import { IStoreDataStorage } from "../store/store";
 import { isNullOrUndefined } from "../utils/isNullOrUndefined";
-import { IFlag } from "../evaluation/data/IFlag";
+import { IFlag, IFlagBase } from "../evaluation/data/IFlag";
 
 export class JsonBootstrapProvider implements IBootstrapProvider {
   private dataSet?: IStoreDataStorage;
 
-  constructor(jsonStr: string) {
-    let flags = JSON.parse(jsonStr);
-    if (!flags) {
-      throw new Error("Invalid JSON");
-    }
-
-    flags = flags.map((flag: IFlag) => ({...flag, variationOptions: flag.variationOptions || [{id: null, variation: flag.variation}]}));
+  constructor(bootstrap: IFlagBase[]) {
+    const flags: IFlag[] = (bootstrap || []).map((flag: IFlagBase) => ({...flag, variationOptions: flag.variationOptions || [{id: null, variation: flag.variation}]})) as IFlag[];
 
     const data = deserializeAll(flags);
     this.dataSet = {

@@ -17,8 +17,8 @@ export interface IFlagBase {
   id: string, // the key
   variation: FlagValue,
   variationType: VariationDataType,
-  sendToExperiment: boolean,
-  timestamp: number,
+  sendToExperiment?: boolean,
+  timestamp?: number,
   variationOptions?: IVariation[],
 }
 

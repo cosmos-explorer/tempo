@@ -38,9 +38,9 @@ class FbClient extends FbClientCore {
         onReady: () => {
           emitter.emit('ready');
         },
-        onUpdate: (key: string) => {
-          emitter.emit('update', {key});
-          emitter.emit(`update:${ key }`, {key});
+        onUpdate: (keys: string[]) => {
+          emitter.emit('update', [keys]);
+          keys.forEach((key) => emitter.emit(`update:${ key }`, key));
         },
         hasEventListeners: () =>
           emitter

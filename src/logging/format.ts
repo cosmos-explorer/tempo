@@ -89,7 +89,7 @@ function toFloat(val: any): string {
 
 // Based on:
 // https://nodejs.org/api/util.html#utilformatformat-args
-// The result will not match node exactly, but it should get the
+// The result will not match browser exactly, but it should get the
 // right information through.
 const escapes: Record<string, (val: any) => string> = {
   s: (val: any) => tryStringify(val),

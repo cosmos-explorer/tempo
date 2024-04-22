@@ -9,6 +9,7 @@
 // one per file.
 
 import OptionMessages from "./OptionMessages";
+import { IFlagBase } from "../evaluation";
 
 /**
  * Interface for type validation.
@@ -155,6 +156,46 @@ export class NullableBoolean implements TypeValidator {
   }
 }
 
+export class BootstrapValidator implements TypeValidator {
+  messages: string[] = [];
+
+  is(u: unknown): boolean {
+    if (typeof u !== 'object' || u === null) {
+      this.messages.push(OptionMessages.invalidOptionValue('bootstrap'));
+      return false;
+    }
+
+    try {
+      const bootstrap = u as IFlagBase[];
+      for (let flag of bootstrap) {
+        const hasMandatoryKeys = ['id', 'variation'].every((key) => Object.keys(flag).includes(key));
+        const keys = Object.keys(flag);
+
+        if (keys.includes('id')) {
+          this.messages.push(OptionMessages.missingKeyInBootstrapValue('id'));
+        }
+
+        if (keys.includes('variation')) {
+          this.messages.push(OptionMessages.missingKeyInBootstrapValue('variation'));
+        }
+
+        if (this.messages.length > 0) {
+          return false;
+        }
+      }
+    } catch (_) {
+      this.messages.push(OptionMessages.wrongOptionType('bootstrap', this.getType(), typeof u));
+      return false;
+    }
+
+    return true;
+  }
+
+  getType(): string {
+    return 'IFlagBase[]';
+  }
+}
+
 export class UserValidator implements TypeValidator {
   messages: string[] = [];
 
@@ -236,6 +277,8 @@ export class TypeValidators {
   static readonly Boolean = new Type<boolean>('boolean', true);
 
   static readonly User = new Type<object>('object', {});
+
+  static readonly Bootstrap = new Type<object>('object', {});
 
   static readonly Function = new Function();
 

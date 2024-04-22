@@ -25,4 +25,12 @@ export default class OptionMessages {
   static mandatory(name: string): string {
     return `${ name } is mandatory`;
   }
+
+  static invalidOptionValue(name: string): string {
+    return `Invalid option value: ${ name }`;
+  }
+
+  static missingKeyInBootstrapValue(key: string): string {
+    return `Missing key "${ key }" in bootstrap value`;
+  }
 }

@@ -17,6 +17,7 @@ import { EmptyString } from "./constants";
 import { DataSyncModeEnum } from "./data-sync/DataSyncMode";
 import { IUser } from "./options/IUser";
 import LocalStorageStore from "./platform/browser/LocalStorageStore";
+import { JsonBootstrapProvider } from "./bootstrap";
 
 // Once things are internal to the implementation of the SDK we can depend on
 // types. Calls to the SDK could contain anything without any regard to typing.
@@ -42,7 +43,7 @@ const validations: Record<string, TypeValidator> = {
   pollingInterval: TypeValidators.Number,
   offline: TypeValidators.Boolean,
   dataSyncMode: TypeValidators.String,
-  bootstrapProvider: TypeValidators.Object,
+  bootstrap: TypeValidators.Bootstrap,
   user: TypeValidators.User
 };
 
@@ -63,7 +64,7 @@ export const defaultValues: IValidatedOptions = {
   pollingInterval: 30000,
   offline: false,
   store: (options: IOptions) => new LocalStorageStore(options),
-  bootstrapProvider: new NullBootstrapProvider(),
+  bootstrap: undefined,
   user: undefined,
 };
 
@@ -155,7 +156,7 @@ export default class Configuration {
 
   public readonly dataSyncMode: DataSyncModeEnum;
 
-  public readonly bootstrapProvider: IBootstrapProvider;
+  public readonly bootstrapProvider: IBootstrapProvider = new NullBootstrapProvider();
 
   public readonly user: IUser;
 
@@ -198,7 +199,14 @@ export default class Configuration {
     this.pollingInterval = validatedOptions.pollingInterval;
 
     this.offline = validatedOptions.offline;
-    this.bootstrapProvider = validatedOptions.bootstrapProvider;
+    if (validatedOptions.bootstrap && validatedOptions.bootstrap.length > 0) {
+      try {
+        this.bootstrapProvider = new JsonBootstrapProvider(validatedOptions.bootstrap);
+      } catch (_) {
+        this.logger?.error('Failed to parse bootstrap JSON, use NullBootstrapProvider.');
+      }
+    }
+
     if (this.offline) {
       this.logger?.info('Offline mode enabled. No data synchronization with the FeatBit server will occur.');
     }

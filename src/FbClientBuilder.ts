@@ -6,10 +6,9 @@ import { IClientContext } from "./options/IClientContext";
 import { IDataSourceUpdates } from "./store/IDataSourceUpdates";
 import { VoidFunction } from "./utils/VoidFunction";
 import { ILogger } from "./logging/ILogger";
-import { IBootstrapProvider } from "./bootstrap/IBootstrapProvider";
-import { JsonBootstrapProvider } from "./bootstrap/JsonBootstrapProvider";
 import { DataSyncModeEnum } from "./data-sync/DataSyncMode";
 import { IUser } from "./options/IUser";
+import { IFlagBase } from "./evaluation";
 
 /**
  * Creates an instance of the FeatBit client.
@@ -137,18 +136,10 @@ export class FbClientBuilder {
   }
 
   /**
-   * Refer to {@link IOptions.bootstrapProvider}.
-   */
-  bootstrapProvider(bootstrapProvider: IBootstrapProvider): FbClientBuilder {
-    this._options.bootstrapProvider = bootstrapProvider;
-    return this;
-  }
-
-  /**
    * Use the JsonBootstrapProvider.
    */
-  useJsonBootstrapProvider(jsonStr: string): FbClientBuilder {
-    this._options.bootstrapProvider = new JsonBootstrapProvider(jsonStr);
+  bootstrap(flags: IFlagBase[]): FbClientBuilder {
+    this._options.bootstrap = flags;
     return this;
   }
 

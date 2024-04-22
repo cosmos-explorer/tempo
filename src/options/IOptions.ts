@@ -3,10 +3,10 @@ import { IDataSynchronizer } from "../data-sync/IDataSynchronizer";
 import { IClientContext } from "./IClientContext";
 import { IDataSourceUpdates } from "../store/IDataSourceUpdates";
 import { VoidFunction } from "../utils/VoidFunction";
-import { IBootstrapProvider } from "../bootstrap/IBootstrapProvider";
 import { IStore } from "../platform/IStore";
 import { DataSyncModeEnum } from "../data-sync/DataSyncMode";
 import { IUser } from "./IUser";
+import { IFlagBase } from "../evaluation";
 
 export interface IOptions {
   /**
@@ -96,11 +96,9 @@ export interface IOptions {
   webSocketPingInterval?: number;
 
   /**
-   * The bootstrap provider.
-
-   * Defaults to {@link NullBootstrapProvider}.
+   * The flags to bootstrap the client, which should be the string representation of type {@link IFlagBase[]}.
    */
-  bootstrapProvider?: IBootstrapProvider;
+  bootstrap?: IFlagBase[];
 
   /**
    * The store to use for caching feature flag data.

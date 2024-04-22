@@ -1,21 +1,20 @@
-# FeatBit Server-Side SDK for Node.js
+# FeatBit Client SDK for JavaScript
 
 ## Introduction
 
-This is the Node.js Server-Side SDK for the 100% open-source feature flags management platform [FeatBit](https://github.com/featbit/featbit).
+This is the Client-Side SDK for the 100% open-source feature flags management platform [FeatBit](https://github.com/featbit/featbit).
 
-The FeatBit Server-Side SDK for Node.js is designed primarily for use in multi-user systems such as web servers and applications. It is not intended for use in desktop and embedded systems applications.
+Be aware, this is a client side SDK, it is intended for use in a single-user context, which can be mobile, desktop or embedded applications. This SDK can only be ran in a browser environment, it is not suitable for NodeJs applications.
 
 ## Data synchronization
-We use **WebSocket** or **Polling** to make the local data synchronized with the server, and then store them in memory by default. Whenever there is any change to a feature flag or its related data, this change will be pushed to the SDK, the average synchronization time is less than **100ms**. Be aware the WebSocket/Polling connection may be interrupted due to internet outage, but it will be resumed automatically once the problem is gone.
+We use **WebSocket** or **Polling** to make the local data synchronized with the server, and then store them in localStorage by default. Whenever there is any change to a feature flag or its related data, this change will be pushed to the SDK, the average synchronization time is less than **100ms**. Be aware the WebSocket/Polling connection may be interrupted due to internet outage, but it will be resumed automatically once the problem is gone.
 
 ## Get Started
 
 ### Installation
-The latest stable version is available on [npm](https://www.npmjs.com/package/@featbit/node-server-sdk).
 
 ```bash
-npm install --save @featbit/node-server-sdk
+npm install --save @featbit/js-client-sdk
 ```
 ### Prerequisite
 
@@ -27,10 +26,10 @@ Follow the documentation below to retrieve these values
 
 ### Quick Start
 
-The following code demonstrates the basic usage of `@featbit/node-server-sdk`.
+The following code demonstrates the basic usage of `@featbit/js-client-sdk`.
 
 ```javascript
-import { FbClientBuilder } from "@featbit/node-server-sdk";
+import { FbClientBuilder } from "@featbit/browser-server-sdk";
 
 // setup SDK options
 const fbClient = new FbClientBuilder()
@@ -86,7 +85,7 @@ The `FbClientNode` is the heart of the SDK which provides access to FeatBit serv
 #### FbClient Using Streaming
 
 ```javascript
-import { FbClientBuilder } from "@featbit/node-server-sdk";
+import { FbClientBuilder } from "@featbit/browser-server-sdk";
 
 const fbClient = new FbClientBuilder()
     .sdkKey("your_sdk_key")
@@ -97,7 +96,7 @@ const fbClient = new FbClientBuilder()
 #### FbClient Using Polling
 
 ```javascript
-import { FbClientBuilder, DateSyncMode } from "@featbit/node-server-sdk";
+import { FbClientBuilder, DateSyncMode } from "@featbit/browser-server-sdk";
 
 const fbClient = new FbClientBuilder()
     .sdkKey("your_sdk_key")
@@ -117,7 +116,7 @@ Besides these built-in properties, you can define any additional attributes asso
 UserBuilder is used to construct a `IUser` instance. The builder exposes methods to configure the IUser, and finally to create the IUser instance.
 
 ```javascript
-import { UserBuilder } from "@featbit/node-server-sdk";
+import { UserBuilder } from "@featbit/browser-server-sdk";
 
 const bob = new UserBuilder("unique_key_for_bob")
     .name("Bob")
@@ -167,7 +166,7 @@ console.log(`flag '${flagKey}' returns ${boolVariationDetail.value} for user ${u
 
 In some situations, you might want to stop making remote calls to FeatBit. Here is how:
 ```javascript
-import { FbClientBuilder } from "@featbit/node-server-sdk";
+import { FbClientBuilder } from "@featbit/browser-server-sdk";
 
 const fbClient = new FbClientBuilder()
     .offline(true)
@@ -188,7 +187,7 @@ curl -H "Authorization: <your-env-secret>" http://localhost:5100/api/public/sdk/
 
 Then use that file to initialize FbClient:
 ```javascript
-import { FbClientBuilder } from "@featbit/node-server-sdk";
+import { FbClientBuilder } from "@featbit/browser-server-sdk";
 import fs from 'fs';
 
 let data: string = '';

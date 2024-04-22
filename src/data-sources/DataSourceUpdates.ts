@@ -6,7 +6,6 @@ import {
 } from "../store/store";
 import { IStore } from "../platform/IStore";
 import { IDataKind } from "../IDataKind";
-import NamespacedDataSet from "./NamespacedDataSet";
 import DataKinds from "../store/DataKinds";
 
 /**
@@ -17,7 +16,7 @@ export default class DataSourceUpdates implements IDataSourceUpdates {
   constructor(
     private readonly store: IStore,
     private readonly hasEventListeners: () => boolean,
-    private readonly onChange: (key: string) => void,
+    private readonly onChange: (keys: string[]) => void,
   ) {
   }
 
@@ -33,19 +32,15 @@ export default class DataSourceUpdates implements IDataSourceUpdates {
         // Defer change events so they execute after the callback.
         Promise.resolve().then(() => {
           if (checkForChanges) {
-            const updatedFlags = new NamespacedDataSet<boolean>();
-            Object.keys(allData).forEach((namespace) => {
-              const oldDataForKind = oldData?.[namespace] || {};
-              const newDataForKind = allData[namespace];
-              const mergedData = {...oldDataForKind, ...newDataForKind};
-              Object.keys(mergedData)
-                .filter((key: string) => this.isUpdated(oldDataForKind && oldDataForKind[key], newDataForKind && newDataForKind[key]))
-                .reduce((acc, key) => {
-                  acc.set(namespace, key, true);
-                  return acc;
-                }, updatedFlags);
-            });
-            this.sendChangeEvents(updatedFlags);
+            const updatedKeys = Object.keys(allData)
+              .flatMap((namespace) => {
+                const oldDataForKind = oldData?.[namespace] || {};
+                const newDataForKind = allData[namespace];
+                const mergedData = {...oldDataForKind, ...newDataForKind};
+                return Object.keys(mergedData)
+                  .filter((key: string) => this.isUpdated(oldDataForKind && oldDataForKind[key], newDataForKind && newDataForKind[key]));
+              });
+            updatedKeys.length > 0 && this.onChange(updatedKeys);
           }
         });
         callback?.();
@@ -76,12 +71,8 @@ export default class DataSourceUpdates implements IDataSourceUpdates {
       this.store.upsert(kind, data, () => {
         // Defer change events so they execute after the callback.
         Promise.resolve().then(() => {
-          if (checkForChanges) {
-            const updatedFlags = new NamespacedDataSet<boolean>();
-            if (this.isUpdated(oldItem, data[key])) {
-              updatedFlags.set(kind.namespace, key, true);
-            }
-            this.sendChangeEvents(updatedFlags);
+          if (checkForChanges && this.isUpdated(oldItem, data[key])) {
+            this.onChange([key]);
           }
         });
 
@@ -98,13 +89,5 @@ export default class DataSourceUpdates implements IDataSourceUpdates {
 
   private isUpdated(oldData?: IStoreItem, newData?: IStoreItem): boolean {
     return !oldData || !newData || newData.version > oldData.version
-  }
-
-  private sendChangeEvents(dataSet: NamespacedDataSet<boolean>) {
-    dataSet.enumerate((namespace, key) => {
-      if (namespace === DataKinds.Flags.namespace) {
-        this.onChange(key);
-      }
-    });
   }
 }

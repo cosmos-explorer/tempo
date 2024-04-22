@@ -35,7 +35,7 @@ export interface IPlatformData {
 
 export interface ISdkData {
   /**
-   * The name of the SDK. e.g. "node-server-sdk"
+   * The name of the SDK. e.g. "browser-server-sdk"
    */
   name?: string;
 
