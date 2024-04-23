@@ -80,10 +80,7 @@
 
         await client.waitForInitialization();
         let flagValue = client.variation(flagKey, 'DeepBlue');
-        let flagValue1 = client.variation(flagKey, 'DeepBlue');
-        let flagValue2 = client.variation(flagKey, 'DeepBlue');
-        let flagValue3 = client.variation(flagKey, 'DeepBlue');
-        client.track('aaa');
+
         setTimeout(() => {
             client.track('aaa');
         }, 5000);

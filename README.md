@@ -6,9 +6,6 @@ This is the Client-Side SDK for the 100% open-source feature flags management pl
 
 Be aware, this is a client side SDK, it is intended for use in a single-user context, which can be mobile, desktop or embedded applications. This SDK can only be ran in a browser environment, it is not suitable for NodeJs applications.
 
-## Data synchronization
-We use **WebSocket** or **Polling** to make the local data synchronized with the server, and then store them in localStorage by default. Whenever there is any change to a feature flag or its related data, this change will be pushed to the SDK, the average synchronization time is less than **100ms**. Be aware the WebSocket/Polling connection may be interrupted due to internet outage, but it will be resumed automatically once the problem is gone.
-
 ## Get Started
 
 ### Installation
@@ -29,14 +26,40 @@ Follow the documentation below to retrieve these values
 The following code demonstrates the basic usage of `@featbit/js-client-sdk`.
 
 ```javascript
-import { FbClientBuilder } from "@featbit/browser-server-sdk";
+import { FbClientBuilder, UserBuilder, DateSyncMode } from "@featbit/js-client-sdk";
 
-// setup SDK options
-const fbClient = new FbClientBuilder()
-    .sdkKey("your_sdk_key")
-    .streamingUri('ws://localhost:5100')
-    .eventsUri("http://localhost:5100")
+const bob = new UserBuilder('a-unique-key-of-user')
+    .name('bob')
+    .custom('age', '18')
+    .custom('country', 'FR')
     .build();
+
+// setup SDK client with websocket streaming
+const fbClient = new FbClientBuilder()
+        .sdkKey("your_sdk_key")
+        .streamingUri('ws://localhost:5100')
+        .eventsUri("http://localhost:5100")
+        .user(bob)
+        .build();
+
+// or use polling instead of websocket
+// const fbClient = new FbClientBuilder()
+//         .sdkKey("your_sdk_key")
+//         .pollingUri('http://localhost:5100')
+//         .dataSyncMode(DateSyncMode.POLLING)
+//         .pollingInterval(60 * 1000) // 1 minute
+//         .eventsUri("http://localhost:5100")
+//         .user(bob)
+//         .build();
+
+// Or use options to initialize the SDK client
+// const fbClient = new fbClientBuilder({
+//       sdkKey: 'your_sdk_key',
+//       streamingUri: 'ws://localhost:5100',
+//       eventsUri: 'http://localhost:5100',
+//       user: bob
+//     })
+//     .build();
 
 (async () => {
   // wait for the SDK to be initialized
@@ -49,54 +72,63 @@ const fbClient = new FbClientBuilder()
 
   // flag to be evaluated
   const flagKey = "game-runner";
-  
-  // create a user
-  const user = new UserBuilder('a-unique-key-of-user')
-    .name('bob')
-    .custom('sex', 'female')
-    .custom('age', 18)
-    .build();
 
   // evaluate a feature flag for a given user
-  const boolVariation = await fbClient.boolVariation(flagKey, user, false);
-  console.log(`flag '${flagKey}' returns ${boolVariation} for user ${user.Key}`);
+  const boolVariation = await fbClient.boolVariation(flagKey, false);
+  console.log(`flag '${flagKey}' returns ${boolVariation}`);
 
-  // evaluate a boolean flag for a given user with evaluation detail
-  const boolVariationDetail = await fbClient.boolVariationDetail(flagKey, user, false);
-  console.log(`flag '${flagKey}' returns ${boolVariationDetail.value} for user ${user.Key}` +
+  // evaluate a boolean flag with evaluation detail
+  const boolVariationDetail = await fbClient.boolVariationDetail(flagKey, false);
+  console.log(`flag '${flagKey}' returns ${boolVariationDetail.value}` +
   `Reason Kind: ${boolVariationDetail.kind}, Reason Description: ${boolVariationDetail.reason}`);
 
-  // make sure the events are flushed before exit
-  await fbClient.close();
+  // switch user
+  const alice = new UserBuilder('another-unique-key-of-user')
+          .name('alice')
+          .custom('country', 'UK')
+          .custom('age', 36)
+          .build();
+  
+  await fbClient.identify(alice);
 })();
 ```
 
 ## Examples
-- [Console App](./examples/console-app)
+- [web App](./examples/console-app)
+- For how to use FeatBit with React, please refer to the [react-client-sdk](https://github.com/featbit/featbit-react-client-sdk)
 
 ## SDK
 
-### FbClientNode
+### FbClient
 
-The `FbClientNode` is the heart of the SDK which provides access to FeatBit server. Applications should instantiate a single instance for the lifetime of the application.
+The `FbClient` is the heart of the SDK which provides access to FeatBit server. Applications should instantiate a single instance for the lifetime of the application.
 
-`FbClientBuilder` is used to construct a `FbClientNode` instance. The builder exposes methods to configure the SDK, and finally to create the `FbClientNode` instance.
+`FbClientBuilder` is used to construct a `FbClient` instance. The builder exposes methods to configure the SDK, and finally to create the `FbClient` instance.
 
 #### FbClient Using Streaming
 
 ```javascript
-import { FbClientBuilder } from "@featbit/browser-server-sdk";
+import { FbClientBuilder, UserBuilder } from "@featbit/js-client-sdk";
 
+const user = new UserBuilder('a-unique-key-of-user')
+    .name('bob')
+    .build();
+    
 const fbClient = new FbClientBuilder()
     .sdkKey("your_sdk_key")
     .streamingUri('ws://localhost:5100')
     .eventsUri("http://localhost:5100")
+    .user()
     .build();
 ```
 #### FbClient Using Polling
 
 ```javascript
-import { FbClientBuilder, DateSyncMode } from "@featbit/browser-server-sdk";
+import { FbClientBuilder, UserBuilder, DateSyncMode } from "@featbit/browser-server-sdk";
+
+const user = new UserBuilder('a-unique-key-of-user')
+        .name('bob')
+        .build();
 
 const fbClient = new FbClientBuilder()
     .sdkKey("your_sdk_key")
@@ -116,7 +148,7 @@ Besides these built-in properties, you can define any additional attributes asso
 UserBuilder is used to construct a `IUser` instance. The builder exposes methods to configure the IUser, and finally to create the IUser instance.
 
 ```javascript
-import { UserBuilder } from "@featbit/browser-server-sdk";
+import { UserBuilder } from "@featbit/js-client-sdk";
 
 const bob = new UserBuilder("unique_key_for_bob")
     .name("Bob")
@@ -125,12 +157,41 @@ const bob = new UserBuilder("unique_key_for_bob")
     .build();
 ```
 
-### Evaluating flags
+### Bootstrap
+If you already have the feature flags available, you can pass them to the SDK instead of requesting from the remote.
 
-By using the feature flag data it has already received, the SDK **locally calculates** the value of a feature flag for a
-given user.
 
-There is a `Variation` method that returns a flag value, and a `VariationDetail` method that returns an object
+> **_NOTE:_** The bootstrapped flags will be overridden by the remote flags if they are available.
+
+```javascript
+// define the option with the bootstrap parameter
+const options = {
+  ...
+  // the array should contain all your feature flags
+  bootstrap = [{
+    // feature flag key name
+    id: string,
+    // variation value
+    variation: string,
+    // variation data type, string will be used if not specified
+    variationType: VariationDataType
+  }],
+  ...
+}
+
+const fbClient = new FbClientBuilder(options).build();
+// or
+const fbClient = new FbClientBuilder()
+        //... other options
+        .bootstrap(options.bootstrap)
+        .build();
+```
+
+### Evaluation
+
+After initialization, the SDK has all the feature flags locally, and it does not need to request the remote server for any feature flag evaluation. All evaluation is done locally and synchronously, the average evaluation time is less than 1 ms.
+
+There is a `variation` method that returns a flag value, and a `variationDetail` method that returns an object
 describing how the value was determined for each type.
 
 - boolVariation/boolVariationDetail
@@ -138,27 +199,20 @@ describing how the value was determined for each type.
 - numberVariation/numberVariationDetail
 - jsonVariation/jsonVariationDetail
 
-Variation calls take the feature flag key, a IUser, and a default value. If any error makes it impossible to
+Variation calls take the feature flag key and a default value. If any error makes it impossible to
 evaluate the flag (for instance, the feature flag key does not match any existing flag), default value is returned.
 
 ```javascript
 // flag to be evaluated
 const flagKey = "game-runner";
 
-// create a user
-const user = new UserBuilder('a-unique-key-of-user')
-    .name('bob')
-    .custom('sex', 'female')
-    .custom('age', 18)
-    .build();
-
 // evaluate a feature flag for a given user
-const boolVariation = await fbClient.boolVariation(flagKey, user, false);
-console.log(`flag '${flagKey}' returns ${boolVariation} for user ${user.Key}`);
+const boolVariation = await fbClient.boolVariation(flagKey, false);
+console.log(`flag '${flagKey}' returns ${boolVariation}`);
 
 // evaluate a boolean flag for a given user with evaluation detail
-const boolVariationDetail = await fbClient.boolVariationDetail(flagKey, user, false);
-console.log(`flag '${flagKey}' returns ${boolVariationDetail.value} for user ${user.Key}` +
+const boolVariationDetail = await fbClient.boolVariationDetail(flagKey, false);
+console.log(`flag '${flagKey}' returns ${boolVariationDetail.value}` +
     `Reason Kind: ${boolVariationDetail.kind}, Reason Description: ${boolVariationDetail.reason}`);
 ```
 
@@ -169,39 +223,134 @@ In some situations, you might want to stop making remote calls to FeatBit. Here 
 import { FbClientBuilder } from "@featbit/browser-server-sdk";
 
 const fbClient = new FbClientBuilder()
-    .offline(true)
-    .build();
+        //... other options
+        .offline(true)
+        .build();
 
 ```
 
-> **_NOTE:_** Populating data from a JSON string is only supported in offline mode.
-
-The format of the data in flags and segments is defined by FeatBit and is subject to change. Rather than trying to
+The format of the data in flags is defined by FeatBit and is subject to change. Rather than trying to
 construct these objects yourself, it's simpler to request existing flags directly from the FeatBit server in JSON format
 and use this output as the starting point for your file. Here's how:
 
 ```shell
 # replace http://localhost:5100 with your evaluation server url
-curl -H "Authorization: <your-env-secret>" http://localhost:5100/api/public/sdk/server/latest-all > featbit-bootstrap.json
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: <your-env-secret>" \
+  -d '{
+    "name": "my user",
+    "keyId": "my-user",
+    "customizedProperties": [
+        {
+            "name": "frequency",
+            "value": "3.5"
+        }
+    ]
+  }' \
+  http://localhost:5100/api/public/sdk/client/latest-all > featbit-bootstrap.json
+```
+The file will contain the following format:
+```json
+{
+  "messageType": "data-sync",
+  "data": {
+    "eventType": "full",
+    "userKeyId": "my-user",
+    "featureFlags": []
+  }
+}
 ```
 
-Then use that file to initialize FbClient:
+Then takes `featureFlags` value and pass it to the **FbClientBuilder**:
+
 ```javascript
 import { FbClientBuilder } from "@featbit/browser-server-sdk";
 import fs from 'fs';
 
 let data: string = '';
 try {
-  data = fs.readFileSync('path_to_the_json_file', 'utf8');
+  data = fs.readFileSync('featbit-bootstrap.json', 'utf8');
 } catch (err) {
   console.error(err);
 }
 
 const fbClient = new FbClientBuilder()
-    .offline(false)
-    .useJsonBootstrapProvider(data)
+    //... other options
+    .offline(true) 
+    .bootstrap(data.data.featureFlags)
     .build();
 ```
+
+### Events
+
+#### Wait for ready
+
+To find out when the client is ready, you can use one of two mechanisms: events or promises.
+
+The client object can emit JavaScript events. It emits a ready event when it receives initial flag values from the server. You can listen for this event to determine when the client is ready to evaluate flags.
+
+```javascript
+fbClient.on('ready', () => {
+  var flagValue = fbClient.variation("YOUR_FEATURE_KEY", defaultValue);
+});
+```
+
+Or, you can use a promise instead of an event. The SDK has a method that returns a promise for initialization: **waitForInitialization()**. The behavior of waitUntilReady() is equivalent to the ready event. The promise resolves when the client receives its initial flag data. As with all promises, you can either use .then() to provide a callback, or use await if you are writing asynchronous code.
+
+```javascript
+fbClient.waitForInitialization().then((data) => {
+  // data has the following structure [ {id: 'featureFlagKey', variation: variationValue } ]
+  // variationValue has the type as defined on remote
+  // initialization succeeded, flag values are now available
+});
+// or, with await:
+const featureFlags = await fbClient.waitForInitialization();
+// initialization succeeded, flag values are now available
+```
+
+The SDK only decides initialization has failed if it receives an error response indicating that the environment ID is invalid. If it has trouble connecting to FeatBit, it will keep retrying until it succeeds.
+
+#### Subscribe to flag(s) changes
+
+To get notified when a feature flag is changed, we offer two methods
+- subscribe to the changes of any feature flag(s)
+
+```javascript
+fbClient.on('update', (keys: string[]) => {
+  // do something when any feature flag changes
+});
+
+```
+- subscribe to the changes of a specific feature flag
+
+```javascript
+// replace feature_flag_key with your feature flag key
+fbClient.on('update:feature_flag_key', (key) => {
+  const myFeature = fbClient.variation('feature_flag_key', defaultValue);
+});
+
+```
+
+### Switch user after initialization
+If the user changed after some process, login for example, the following method can be used to set the user after initialization.
+
+```javascript
+await fbClient.identify(user);
+```
+
+
+### Data synchronization
+
+We use **WebSocket** or **Polling** to make the local data synchronized with the server, and then store them in localStorage by default. Whenever there is any change to a feature flag or its related data, this change will be pushed to the SDK, the average synchronization time is less than **100ms** if WebSocket is configured. Be aware the WebSocket/Polling connection may be interrupted due to internet outage, but it will be resumed automatically once the problem is gone.
+
+### Network failure handling
+
+As all data is stored locally in the localStorage, in the following situations, the SDK would still work when there is temporarily no internet connection:
+- it has already received the data from previous connections
+- the fbClient.bootstrap(featureFlags) method is called with all necessary feature flags
+
+In the meantime, the SDK would try to reconnect to the server by an incremental interval, this makes sure that the websocket would be restored when the internet connection is back.
 
 ### Experiments (A/B/n Testing)
 
@@ -211,18 +360,13 @@ then you should be able to see the result in near real time after the experiment
 In case you need more control over the experiment data sent to our server, we offer a method to send custom event.
 
 ```javascript
-fbClient.track(user, eventName, numericValue);
+fbClient.track(eventName, numericValue);
 ```
 
 **numericValue** is not mandatory, the default value is **1.0**.
 
 Make sure `track` is called after the related feature flag is called, otherwise the custom event won't be included
 into the experiment result.
-
-## Supported Node.js versions
-
-This version of the SDK should work for the recent versions of Node.js, if you see any issues with a specific version,
-please create an issue.
 
 ## Getting support
 - If you have a specific question about using this sdk, we encourage you
@@ -231,4 +375,4 @@ please create an issue.
   feature, [submit an issue](https://github.com/featbit/dotnet-server-sdk/issues/new).
 
 ## See Also
-- [Connect To Node.js Sdk](https://docs.featbit.co/getting-started/connect-an-sdk#node.js)
+- [Connect To JavaScript Sdk](https://docs.featbit.co/getting-started/connect-an-sdk#javascript)

@@ -67,6 +67,8 @@ export class FbClientCore implements IFbClientCore {
 
   private config: Configuration;
 
+  private dataSourceUpdates?: DataSourceUpdates;
+
   private onError: (err: Error) => void;
 
   private onFailed: (err: Error) => void;
@@ -103,11 +105,11 @@ export class FbClientCore implements IFbClientCore {
     const clientContext = new ClientContext(this.config.sdkKey, this.config, platform);
     this.store = this.config.storeFactory(clientContext);
     this.store.identify(this.config.user);
-    const dataSourceUpdates = new DataSourceUpdates(this.store, hasEventListeners, onUpdate);
+    this.dataSourceUpdates = new DataSourceUpdates(this.store, hasEventListeners, onUpdate);
     this.evaluator = new Evaluator(this.store);
 
     // use bootstrap provider to populate store
-    await this.config.bootstrapProvider.populate(this.config.user.keyId, dataSourceUpdates);
+    await this.config.bootstrapProvider.populate(this.config.user.keyId, this.dataSourceUpdates);
 
     if (this.config.offline) {
       this.eventProcessor = new NullEventProcessor();
@@ -117,7 +119,7 @@ export class FbClientCore implements IFbClientCore {
     } else {
       this.eventProcessor = new DefaultEventProcessor(clientContext);
 
-      const listeners = createStreamListeners(dataSourceUpdates, this.logger, {
+      const listeners = createStreamListeners(this.dataSourceUpdates, this.logger, {
         put: () => this.initSuccess(),
         patch: () => this.initSuccess()
       });
@@ -143,7 +145,7 @@ export class FbClientCore implements IFbClientCore {
       this.dataSynchronizer = this.config.dataSynchronizerFactory?.(
         clientContext,
         this.store,
-        dataSourceUpdates,
+        this.dataSourceUpdates,
         () => this.initSuccess(),
         (e) => this.dataSourceErrorHandler(e),
       ) ?? dataSynchronizer;
@@ -152,7 +154,7 @@ export class FbClientCore implements IFbClientCore {
     this.start();
   }
 
-  identify(user: IUser) {
+  async identify(user: IUser) {
     const validator = new UserValidator();
     if (!validator.is(user)) {
       validator.messages.forEach((error: string) => {
@@ -164,6 +166,10 @@ export class FbClientCore implements IFbClientCore {
 
     this.store!.identify(user);
     this.dataSynchronizer!.identify(user);
+    const [ flags ] = this.store!.all(DataKinds.Flags);
+    if (Object.keys(flags).length === 0) {
+      await this.config.bootstrapProvider.populate(user.keyId, this.dataSourceUpdates!);
+    }
   }
 
   private start() {
